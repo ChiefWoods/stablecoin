@@ -1,0 +1,20 @@
+[toolchain]
+anchor_version = "0.30.1"
+solana_version = "1.18.17"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+stablecoin = "G5XQC4f9SdwJkbXyta14g5sy9Pq1w3EqsDqtmgaBEvZ1"
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "Localnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "bun test --timeout 1000000"
