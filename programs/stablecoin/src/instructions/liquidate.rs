@@ -53,7 +53,7 @@ pub struct Liquidate<'info> {
 
 impl Liquidate<'_> {
     pub fn liquidate(ctx: Context<Liquidate>, amount_to_burn: u64) -> Result<()> {
-        let health_factor = calculate_health_factor(
+        let mut health_factor = calculate_health_factor(
             ctx.accounts.collateral.lamport_balance,
             ctx.accounts.collateral.amount_minted,
             ctx.accounts.config.liquidation_threshold,
@@ -72,8 +72,21 @@ impl Liquidate<'_> {
 
         let collateral = &mut ctx.accounts.collateral;
 
-        collateral.lamport_balance = ctx.accounts.sol_acc.lamports();
+        collateral.lamport_balance = ctx.accounts.sol_acc.lamports() - amount_to_liquidate;
         collateral.amount_minted -= amount_to_burn;
+
+        health_factor = calculate_health_factor(
+            ctx.accounts.collateral.lamport_balance,
+            ctx.accounts.collateral.amount_minted,
+            ctx.accounts.config.liquidation_threshold,
+            &ctx.accounts.price_update,
+        )?;
+
+        require_gte!(
+            health_factor,
+            ctx.accounts.config.min_health_factor,
+            StablecoinError::BelowMinimumHealthFactor
+        );
 
         let depositor_key = ctx.accounts.collateral.depositor.key();
         let signer_seeds: &[&[&[u8]]] = &[&[

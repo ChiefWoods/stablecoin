@@ -74,6 +74,8 @@ Run all `.test.ts` files under `/tests`.
 bun test
 ```
 
+Note: certain test parameters may have to be adjusted as the SOL-USD price fluctuates.
+
 #### Deployment
 
 1. Configure to use localnet
