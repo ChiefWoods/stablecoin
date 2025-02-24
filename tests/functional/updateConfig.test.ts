@@ -52,8 +52,8 @@ describe("updateConfig", () => {
   });
 
   test("update a config", async () => {
-    const liquidationThreshold = 25;
-    const liquidationBonus = 5;
+    const liquidationThreshold = 2500; // 25% in basis points
+    const liquidationBonus = 500; // 5% in basis points
     const minHealthFactor = 1.1;
 
     await program.methods

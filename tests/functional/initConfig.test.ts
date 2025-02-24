@@ -36,7 +36,7 @@ describe("initConfig", () => {
 
   test("initializes a config", async () => {
     const liquidationThreshold = 5000; // 50% in basis points
-    const liquidationBonus = 10; // 10% in basis points
+    const liquidationBonus = 1000; // 10% in basis points
     const minHealthFactor = 1.0;
 
     await program.methods
