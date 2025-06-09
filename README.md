@@ -1,6 +1,6 @@
 # Stablecoin
 
-USD-pegged stablecoin for [Turbin3 Builders Cohort](https://turbin3.com/).
+USD-pegged stablecoin for [Solana Development Bootcamp](https://github.com/solana-developers/developer-bootcamp-2024).
 
 [Source Repository](https://github.com/ChiefWoods/stablecoin)
 
