@@ -32,12 +32,12 @@ USD-pegged stablecoin for [Turbin3 Builders Cohort](https://turbin3.com/).
 
 ### Prerequisites
 
-1. Update your Solana CLI, Bun toolkit and avm to the latest version
+1. Update your Solana CLI, Bun toolkit and avm
 
 ```bash
-solana-install update
+agave-install init 2.1.20
 bun upgrade
-avm update
+avm init 0.31.1
 ```
 
 ### Setup
