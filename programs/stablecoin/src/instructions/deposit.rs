@@ -1,7 +1,6 @@
 use anchor_lang::{
     prelude::*,
     system_program::{transfer, Transfer},
-    Discriminator,
 };
 use anchor_spl::{
     associated_token::AssociatedToken,

@@ -32,12 +32,12 @@ USD-pegged stablecoin for [Solana Development Bootcamp](https://github.com/solan
 
 ### Prerequisites
 
-1. Update your Solana CLI, Bun toolkit and avm
+1. Update your Solana CLI, avm and Bun toolkit to the latest version
 
 ```bash
 agave-install init 2.1.20
+avm use 0.31.1
 bun upgrade
-avm init 0.31.1
 ```
 
 ### Setup
