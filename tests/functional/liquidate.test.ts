@@ -1,15 +1,12 @@
-import { BankrunProvider } from "anchor-bankrun";
 import { beforeEach, describe, expect, test } from "bun:test";
-import { ProgramTestContext } from "solana-bankrun";
 import { Stablecoin } from "../../target/types/stablecoin";
-import { AnchorError, BN, Program } from "@coral-xyz/anchor";
+import { BN, Program } from "@coral-xyz/anchor";
 import {
   Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
   SystemProgram,
 } from "@solana/web3.js";
-import { getBankrunSetup } from "../setup";
 import {
   ACCOUNT_SIZE,
   AccountLayout,
@@ -17,27 +14,25 @@ import {
   getAssociatedTokenAddressSync,
   TOKEN_2022_PROGRAM_ID,
 } from "@solana/spl-token";
-import {
-  getCollateralPdaAndBump,
-  getMintPdaAndBump,
-  getSolAccPdaAndBump,
-} from "../pda";
-import { getCollateralAcc } from "../accounts";
+import { getCollateralPda, getMintPda, getSolAccPda } from "../pda";
+import { fetchCollateralAcc } from "../accounts";
 import { SOL_USD_PRICE_FEED_PDA } from "../constants";
-import { publicKey } from "@coral-xyz/anchor/dist/cjs/utils";
+import { LiteSVM } from "litesvm";
+import { LiteSVMProvider } from "anchor-litesvm";
+import { expectAnchorError, fundedSystemAccountInfo, getSetup } from "../setup";
 
 describe("liquidate", () => {
-  let { context, provider, program } = {} as {
-    context: ProgramTestContext;
-    provider: BankrunProvider;
+  let { litesvm, provider, program } = {} as {
+    litesvm: LiteSVM;
+    provider: LiteSVMProvider;
     program: Program<Stablecoin>;
   };
 
   const [admin, depositor, liquidator] = Array.from(
     { length: 3 },
-    Keypair.generate
+    Keypair.generate,
   );
-  const [mintPda] = getMintPdaAndBump();
+  const mintPda = getMintPda();
 
   const tokenProgram = TOKEN_2022_PROGRAM_ID;
 
@@ -45,7 +40,7 @@ describe("liquidate", () => {
     mintPda,
     liquidator.publicKey,
     false,
-    tokenProgram
+    tokenProgram,
   );
 
   beforeEach(async () => {
@@ -65,24 +60,19 @@ describe("liquidate", () => {
         owner: liquidator.publicKey,
         state: 1,
       },
-      liquidatorMintAtaData
+      liquidatorMintAtaData,
     );
 
-    ({ context, provider, program } = await getBankrunSetup([
+    ({ litesvm, provider, program } = await getSetup([
       ...[admin, depositor, liquidator].map((kp) => {
         return {
-          address: kp.publicKey,
-          info: {
-            lamports: LAMPORTS_PER_SOL * 5,
-            data: Buffer.alloc(0),
-            owner: SystemProgram.programId,
-            executable: false,
-          },
+          pubkey: kp.publicKey,
+          account: fundedSystemAccountInfo(5 * LAMPORTS_PER_SOL),
         };
       }),
       {
-        address: liquidatorAtaPda,
-        info: {
+        pubkey: liquidatorAtaPda,
+        account: {
           lamports: LAMPORTS_PER_SOL,
           data: liquidatorMintAtaData,
           owner: tokenProgram,
@@ -137,18 +127,17 @@ describe("liquidate", () => {
       .signers([admin])
       .rpc();
 
-    const [collateralPda] = getCollateralPdaAndBump(depositor.publicKey);
-    let collateralAcc = await getCollateralAcc(program, collateralPda);
+    const collateralPda = getCollateralPda(depositor.publicKey);
+    let collateralAcc = await fetchCollateralAcc(program, collateralPda);
 
     const initCollateralLamportBal = collateralAcc.lamportBalance.toNumber();
     const initCollateralAmountMinted = collateralAcc.amountMinted.toNumber();
 
-    const [depositedSolAccPda] = getSolAccPdaAndBump(depositor.publicKey);
-    const initDepositedSolAccLamports = (
-      await context.banksClient.getAccount(depositedSolAccPda)
-    ).lamports;
-    const initLiquidatorLamports = (
-      await context.banksClient.getAccount(liquidator.publicKey)
+    const depositedSolAccPda = getSolAccPda(depositor.publicKey);
+    const initDepositedSolAccLamports =
+      litesvm.getAccount(depositedSolAccPda).lamports;
+    const initLiquidatorLamports = litesvm.getAccount(
+      liquidator.publicKey,
     ).lamports;
 
     const initLiquidatorAtaBal = (
@@ -156,7 +145,7 @@ describe("liquidate", () => {
         provider.connection,
         liquidatorAtaPda,
         "confirmed",
-        tokenProgram
+        tokenProgram,
       )
     ).amount;
 
@@ -173,7 +162,7 @@ describe("liquidate", () => {
       .signers([liquidator])
       .rpc();
 
-    collateralAcc = await getCollateralAcc(program, collateralPda);
+    collateralAcc = await fetchCollateralAcc(program, collateralPda);
 
     const postCollateralLamportBal = collateralAcc.lamportBalance.toNumber();
     const postCollateralAmountMinted = collateralAcc.amountMinted.toNumber();
@@ -181,15 +170,14 @@ describe("liquidate", () => {
     expect(postCollateralLamportBal).toBeLessThan(initCollateralLamportBal);
     expect(postCollateralAmountMinted).toBeLessThan(initCollateralAmountMinted);
 
-    const postDepositedSolAccLamports = (
-      await context.banksClient.getAccount(depositedSolAccPda)
-    ).lamports;
-    const postLiquidatorLamports = (
-      await context.banksClient.getAccount(liquidator.publicKey)
+    const postDepositedSolAccLamports =
+      litesvm.getAccount(depositedSolAccPda).lamports;
+    const postLiquidatorLamports = litesvm.getAccount(
+      liquidator.publicKey,
     ).lamports;
 
     expect(postDepositedSolAccLamports).toBeLessThan(
-      initDepositedSolAccLamports
+      initDepositedSolAccLamports,
     );
     expect(postLiquidatorLamports).toBeGreaterThan(initLiquidatorLamports);
 
@@ -198,7 +186,7 @@ describe("liquidate", () => {
         provider.connection,
         liquidatorAtaPda,
         "confirmed",
-        tokenProgram
+        tokenProgram,
       )
     ).amount;
 
@@ -206,7 +194,7 @@ describe("liquidate", () => {
   });
 
   test("throws if collateral account is above minimum health factor", async () => {
-    const [collateralPda] = getCollateralPdaAndBump(depositor.publicKey);
+    const collateralPda = getCollateralPda(depositor.publicKey);
     const amountToBurn = new BN(25 * 10 ** 9); // 25 units
 
     try {
@@ -221,11 +209,7 @@ describe("liquidate", () => {
         .signers([liquidator])
         .rpc();
     } catch (err) {
-      expect(err).toBeInstanceOf(AnchorError);
-
-      const { error } = err as AnchorError;
-      expect(error.errorCode.code).toEqual("AboveMinimumHealthFactor");
-      expect(error.errorCode.number).toEqual(6001);
+      expectAnchorError(err, "AboveMinimumHealthFactor");
     }
   });
 
@@ -244,7 +228,7 @@ describe("liquidate", () => {
       .signers([admin])
       .rpc();
 
-    const [collateralPda] = getCollateralPdaAndBump(depositor.publicKey);
+    const collateralPda = getCollateralPda(depositor.publicKey);
     const amountToBurn = new BN(1 * 10 ** 9); // 1 unit
 
     try {
@@ -259,11 +243,7 @@ describe("liquidate", () => {
         .signers([liquidator])
         .rpc();
     } catch (err) {
-      expect(err).toBeInstanceOf(AnchorError);
-
-      const { error } = err as AnchorError;
-      expect(error.errorCode.code).toEqual("BelowMinimumHealthFactor");
-      expect(error.errorCode.number).toEqual(6000);
+      expectAnchorError(err, "BelowMinimumHealthFactor");
     }
   });
 });

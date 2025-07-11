@@ -1,36 +1,64 @@
-import { Program } from "@coral-xyz/anchor";
-import { AddedAccount, ProgramTestContext, startAnchor } from "solana-bankrun";
+import { AnchorError, Program } from "@coral-xyz/anchor";
 import { Stablecoin } from "../target/types/stablecoin";
 import idl from "../target/idl/stablecoin.json";
-import { clusterApiUrl, Connection, PublicKey } from "@solana/web3.js";
+import {
+  clusterApiUrl,
+  Connection,
+  LAMPORTS_PER_SOL,
+  PublicKey,
+  SystemProgram,
+} from "@solana/web3.js";
 import { SOL_USD_PRICE_FEED_PDA } from "./constants";
-import { BankrunContextWrapper } from "./bankrunContextWrapper";
+import { AccountInfoBytes } from "litesvm";
+import { fromWorkspace, LiteSVMProvider } from "anchor-litesvm";
+import { expect } from "bun:test";
 
 const devnetConnection = new Connection(clusterApiUrl("devnet"));
 
-export async function getBankrunSetup(accounts: AddedAccount[] = []) {
-  const context = await startAnchor("", [], accounts, 400000n);
+export async function getSetup(
+  accounts: { pubkey: PublicKey; account: AccountInfoBytes }[] = [],
+) {
+  const litesvm = fromWorkspace("./");
 
-  const wrappedContext = new BankrunContextWrapper(context);
-  const provider = wrappedContext.provider;
-  const program = new Program(idl as Stablecoin, provider);
+  const solUsdPriceFeedInfo = await devnetConnection.getAccountInfo(
+    SOL_USD_PRICE_FEED_PDA,
+  );
 
-  await setPriceFeedAccs(context, [SOL_USD_PRICE_FEED_PDA]);
+  litesvm.setAccount(SOL_USD_PRICE_FEED_PDA, {
+    data: solUsdPriceFeedInfo.data,
+    executable: solUsdPriceFeedInfo.executable,
+    lamports: solUsdPriceFeedInfo.lamports,
+    owner: solUsdPriceFeedInfo.owner,
+  });
 
+  for (const { pubkey, account } of accounts) {
+    litesvm.setAccount(new PublicKey(pubkey), {
+      data: account.data,
+      executable: account.executable,
+      lamports: account.lamports,
+      owner: new PublicKey(account.owner),
+    });
+  }
+
+  const provider = new LiteSVMProvider(litesvm);
+  const program = new Program<Stablecoin>(idl, provider);
+
+  return { litesvm, provider, program };
+}
+
+export function fundedSystemAccountInfo(
+  lamports: number = LAMPORTS_PER_SOL,
+): AccountInfoBytes {
   return {
-    context: wrappedContext.context,
-    provider,
-    program,
+    lamports,
+    data: Buffer.alloc(0),
+    owner: SystemProgram.programId,
+    executable: false,
   };
 }
 
-export async function setPriceFeedAccs(
-  context: ProgramTestContext,
-  pubkeys: PublicKey[]
-) {
-  const accInfos = await devnetConnection.getMultipleAccountsInfo(pubkeys);
-
-  accInfos.forEach((info, i) => {
-    context.setAccount(pubkeys[i], info);
-  });
+export async function expectAnchorError(error: Error, code: string) {
+  expect(error).toBeInstanceOf(AnchorError);
+  const { errorCode } = (error as AnchorError).error;
+  expect(errorCode.code).toBe(code);
 }

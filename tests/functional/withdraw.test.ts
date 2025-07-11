@@ -1,27 +1,23 @@
-import { BankrunProvider } from "anchor-bankrun";
 import { beforeEach, describe, expect, test } from "bun:test";
-import { ProgramTestContext } from "solana-bankrun";
 import { Stablecoin } from "../../target/types/stablecoin";
-import { AnchorError, BN, Program } from "@coral-xyz/anchor";
-import { Keypair, LAMPORTS_PER_SOL, SystemProgram } from "@solana/web3.js";
-import { getBankrunSetup } from "../setup";
+import { BN, Program } from "@coral-xyz/anchor";
+import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import {
   getAccount,
   getAssociatedTokenAddressSync,
   TOKEN_2022_PROGRAM_ID,
 } from "@solana/spl-token";
-import {
-  getCollateralPdaAndBump,
-  getMintPdaAndBump,
-  getSolAccPdaAndBump,
-} from "../pda";
-import { getCollateralAcc } from "../accounts";
+import { getCollateralPda, getMintPda, getSolAccPda } from "../pda";
+import { fetchCollateralAcc } from "../accounts";
 import { SOL_USD_PRICE_FEED_PDA } from "../constants";
+import { LiteSVM } from "litesvm";
+import { LiteSVMProvider } from "anchor-litesvm";
+import { expectAnchorError, fundedSystemAccountInfo, getSetup } from "../setup";
 
 describe("withdraw", () => {
-  let { context, provider, program } = {} as {
-    context: ProgramTestContext;
-    provider: BankrunProvider;
+  let { litesvm, provider, program } = {} as {
+    litesvm: LiteSVM;
+    provider: LiteSVMProvider;
     program: Program<Stablecoin>;
   };
 
@@ -30,16 +26,11 @@ describe("withdraw", () => {
   const tokenProgram = TOKEN_2022_PROGRAM_ID;
 
   beforeEach(async () => {
-    ({ context, provider, program } = await getBankrunSetup([
+    ({ litesvm, provider, program } = await getSetup([
       ...[admin, depositor].map((kp) => {
         return {
-          address: kp.publicKey,
-          info: {
-            lamports: LAMPORTS_PER_SOL * 5,
-            data: Buffer.alloc(0),
-            owner: SystemProgram.programId,
-            executable: false,
-          },
+          pubkey: kp.publicKey,
+          account: fundedSystemAccountInfo(5 * LAMPORTS_PER_SOL),
         };
       }),
     ]));
@@ -76,29 +67,27 @@ describe("withdraw", () => {
   });
 
   test("withdraw SOL and burn stablecoin", async () => {
-    const [collateralPda] = getCollateralPdaAndBump(depositor.publicKey);
-    let collateralAcc = await getCollateralAcc(program, collateralPda);
+    const collateralPda = getCollateralPda(depositor.publicKey);
+    let collateralAcc = await fetchCollateralAcc(program, collateralPda);
     const initCollateralLamportBal = collateralAcc.lamportBalance.toNumber();
     const initCollateralAmountMinted = collateralAcc.amountMinted.toNumber();
 
-    const [depositorSolAccPda] = getSolAccPdaAndBump(depositor.publicKey);
-    let depositorSolAcc = await context.banksClient.getAccount(
-      depositorSolAccPda
-    );
+    const depositorSolAccPda = getSolAccPda(depositor.publicKey);
+    let depositorSolAcc = litesvm.getAccount(depositorSolAccPda);
     const initDepositorSolBal = depositorSolAcc.lamports;
 
-    const [mintPda] = getMintPdaAndBump();
+    const mintPda = getMintPda();
     const depositorAtaPda = getAssociatedTokenAddressSync(
       mintPda,
       depositor.publicKey,
       false,
-      tokenProgram
+      tokenProgram,
     );
     let depositorAta = await getAccount(
       provider.connection,
       depositorAtaPda,
       "confirmed",
-      tokenProgram
+      tokenProgram,
     );
     const initDepositorAtaBal = Number(depositorAta.amount);
 
@@ -115,35 +104,35 @@ describe("withdraw", () => {
       .signers([depositor])
       .rpc();
 
-    collateralAcc = await getCollateralAcc(program, collateralPda);
+    collateralAcc = await fetchCollateralAcc(program, collateralPda);
 
     const postCollateralLamportBal = collateralAcc.lamportBalance.toNumber();
     const postCollateralAmountMinted = collateralAcc.amountMinted.toNumber();
 
     expect(postCollateralLamportBal).toEqual(
-      initCollateralLamportBal - amountCollateral.toNumber()
+      initCollateralLamportBal - amountCollateral.toNumber(),
     );
     expect(postCollateralAmountMinted).toEqual(
-      initCollateralAmountMinted - amountToBurn.toNumber()
+      initCollateralAmountMinted - amountToBurn.toNumber(),
     );
 
-    depositorSolAcc = await context.banksClient.getAccount(depositorSolAccPda);
+    depositorSolAcc = litesvm.getAccount(depositorSolAccPda);
     const postDepositorSolBal = depositorSolAcc.lamports;
 
     expect(postDepositorSolBal).toEqual(
-      initDepositorSolBal - amountCollateral.toNumber()
+      initDepositorSolBal - amountCollateral.toNumber(),
     );
 
     depositorAta = await getAccount(
       provider.connection,
       depositorAtaPda,
       "confirmed",
-      tokenProgram
+      tokenProgram,
     );
     const postDepositorAtaBal = Number(depositorAta.amount);
 
     expect(postDepositorAtaBal).toEqual(
-      initDepositorAtaBal - amountToBurn.toNumber()
+      initDepositorAtaBal - amountToBurn.toNumber(),
     );
   });
 
@@ -162,11 +151,7 @@ describe("withdraw", () => {
         .signers([depositor])
         .rpc();
     } catch (err) {
-      expect(err).toBeInstanceOf(AnchorError);
-
-      const { error } = err as AnchorError;
-      expect(error.errorCode.code).toEqual("BelowMinimumHealthFactor");
-      expect(error.errorCode.number).toEqual(6000);
+      expectAnchorError(err, "BelowMinimumHealthFactor");
     }
   });
 });

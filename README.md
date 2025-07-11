@@ -1,6 +1,6 @@
 # Stablecoin
 
-USD-pegged stablecoin for [Solana Development Bootcamp](https://github.com/solana-developers/developer-bootcamp-2024).
+SOL-backed stablecoin for [Solana Development Bootcamp](https://github.com/solana-developers/developer-bootcamp-2024).
 
 [Source Repository](https://github.com/ChiefWoods/stablecoin)
 
@@ -13,10 +13,10 @@ USD-pegged stablecoin for [Solana Development Bootcamp](https://github.com/solan
 
 ### Libraries
 
-- [@solana/web3.js](https://solana-labs.github.io/solana-web3.js/)
+- [@solana/web3.js](https://solana-foundation.github.io/solana-web3.js/)
 - [@solana/spl-token](https://solana-labs.github.io/solana-program-library/token/js/)
-- [solana-bankrun](https://kevinheavey.github.io/solana-bankrun/)
-- [anchor-bankrun](https://kevinheavey.github.io/solana-bankrun/)
+- [litesvm](https://github.com/LiteSVM/litesvm/tree/master/crates/node-litesvm)
+- [anchor-litesvm](https://github.com/LiteSVM/anchor-litesvm/)
 
 ### Crates
 

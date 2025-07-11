@@ -1,30 +1,32 @@
 import { PublicKey } from "@solana/web3.js";
 import idl from "../target/idl/stablecoin.json";
 
-export function getConfigPdaAndBump() {
+const STABLECOIN_PROGRAM_ID = new PublicKey(idl.address);
+
+export function getConfigPda() {
   return PublicKey.findProgramAddressSync(
     [Buffer.from("config")],
-    new PublicKey(idl.address)
-  );
+    STABLECOIN_PROGRAM_ID,
+  )[0];
 }
 
-export function getCollateralPdaAndBump(depositor: PublicKey) {
+export function getCollateralPda(depositor: PublicKey) {
   return PublicKey.findProgramAddressSync(
     [Buffer.from("collateral"), depositor.toBuffer()],
-    new PublicKey(idl.address)
-  );
+    STABLECOIN_PROGRAM_ID,
+  )[0];
 }
 
-export function getSolAccPdaAndBump(depositor: PublicKey) {
+export function getSolAccPda(depositor: PublicKey) {
   return PublicKey.findProgramAddressSync(
     [Buffer.from("sol"), depositor.toBuffer()],
-    new PublicKey(idl.address)
-  );
+    STABLECOIN_PROGRAM_ID,
+  )[0];
 }
 
-export function getMintPdaAndBump() {
+export function getMintPda() {
   return PublicKey.findProgramAddressSync(
     [Buffer.from("mint")],
-    new PublicKey(idl.address)
-  );
+    STABLECOIN_PROGRAM_ID,
+  )[0];
 }

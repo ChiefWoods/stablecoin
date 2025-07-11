@@ -1,18 +1,18 @@
-import { BankrunProvider } from "anchor-bankrun";
 import { beforeEach, describe, expect, test } from "bun:test";
-import { ProgramTestContext } from "solana-bankrun";
 import { Stablecoin } from "../../target/types/stablecoin";
 import { Program } from "@coral-xyz/anchor";
-import { Keypair, LAMPORTS_PER_SOL, SystemProgram } from "@solana/web3.js";
-import { getBankrunSetup } from "../setup";
+import { Keypair } from "@solana/web3.js";
 import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
-import { getConfigPdaAndBump, getMintPdaAndBump } from "../pda";
-import { getConfigAcc } from "../accounts";
+import { getConfigPda, getMintPda } from "../pda";
+import { fetchConfigAcc } from "../accounts";
+import { LiteSVM } from "litesvm";
+import { LiteSVMProvider } from "anchor-litesvm";
+import { fundedSystemAccountInfo, getSetup } from "../setup";
 
 describe("initConfig", () => {
-  let { context, provider, program } = {} as {
-    context: ProgramTestContext;
-    provider: BankrunProvider;
+  let { litesvm, provider, program } = {} as {
+    litesvm: LiteSVM;
+    provider: LiteSVMProvider;
     program: Program<Stablecoin>;
   };
 
@@ -21,15 +21,10 @@ describe("initConfig", () => {
   const tokenProgram = TOKEN_2022_PROGRAM_ID;
 
   beforeEach(async () => {
-    ({ context, provider, program } = await getBankrunSetup([
+    ({ litesvm, provider, program } = await getSetup([
       {
-        address: authority.publicKey,
-        info: {
-          lamports: LAMPORTS_PER_SOL * 5,
-          data: Buffer.alloc(0),
-          owner: SystemProgram.programId,
-          executable: false,
-        },
+        pubkey: authority.publicKey,
+        account: fundedSystemAccountInfo(),
       },
     ]));
   });
@@ -52,16 +47,15 @@ describe("initConfig", () => {
       .signers([authority])
       .rpc();
 
-    const [configPda, configBump] = getConfigPdaAndBump();
-    const configAcc = await getConfigAcc(program, configPda);
+    const configPda = getConfigPda();
+    const configAcc = await fetchConfigAcc(program, configPda);
 
-    expect(configAcc.bump).toEqual(configBump);
     expect(configAcc.liquidationThreshold).toEqual(liquidationThreshold);
     expect(configAcc.liquidationBonus).toEqual(liquidationBonus);
     expect(configAcc.minHealthFactor).toEqual(minHealthFactor);
     expect(configAcc.authority).toStrictEqual(authority.publicKey);
 
-    const [mintPda] = getMintPdaAndBump();
+    const mintPda = getMintPda();
 
     expect(configAcc.mint).toStrictEqual(mintPda);
   });

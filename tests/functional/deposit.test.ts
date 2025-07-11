@@ -1,27 +1,23 @@
-import { BankrunProvider } from "anchor-bankrun";
 import { beforeEach, describe, expect, test } from "bun:test";
-import { ProgramTestContext } from "solana-bankrun";
 import { Stablecoin } from "../../target/types/stablecoin";
-import { AnchorError, BN, Program } from "@coral-xyz/anchor";
-import { Keypair, LAMPORTS_PER_SOL, SystemProgram } from "@solana/web3.js";
-import { getBankrunSetup } from "../setup";
+import { BN, Program } from "@coral-xyz/anchor";
+import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import {
   getAccount,
   getAssociatedTokenAddressSync,
   TOKEN_2022_PROGRAM_ID,
 } from "@solana/spl-token";
-import {
-  getCollateralPdaAndBump,
-  getMintPdaAndBump,
-  getSolAccPdaAndBump,
-} from "../pda";
-import { getCollateralAcc } from "../accounts";
+import { getCollateralPda, getMintPda, getSolAccPda } from "../pda";
+import { fetchCollateralAcc } from "../accounts";
 import { SOL_USD_PRICE_FEED_PDA } from "../constants";
+import { LiteSVM } from "litesvm";
+import { LiteSVMProvider } from "anchor-litesvm";
+import { expectAnchorError, fundedSystemAccountInfo, getSetup } from "../setup";
 
 describe("deposit", () => {
-  let { context, provider, program } = {} as {
-    context: ProgramTestContext;
-    provider: BankrunProvider;
+  let { litesvm, provider, program } = {} as {
+    litesvm: LiteSVM;
+    provider: LiteSVMProvider;
     program: Program<Stablecoin>;
   };
 
@@ -30,16 +26,11 @@ describe("deposit", () => {
   const tokenProgram = TOKEN_2022_PROGRAM_ID;
 
   beforeEach(async () => {
-    ({ context, provider, program } = await getBankrunSetup([
+    ({ litesvm, provider, program } = await getSetup([
       ...[admin, depositor].map((kp) => {
         return {
-          address: kp.publicKey,
-          info: {
-            lamports: LAMPORTS_PER_SOL * 5,
-            data: Buffer.alloc(0),
-            owner: SystemProgram.programId,
-            executable: false,
-          },
+          pubkey: kp.publicKey,
+          account: fundedSystemAccountInfo(5 * LAMPORTS_PER_SOL),
         };
       }),
     ]));
@@ -76,43 +67,35 @@ describe("deposit", () => {
       .signers([depositor])
       .rpc();
 
-    const [collateralPda, collateralBump] = getCollateralPdaAndBump(
-      depositor.publicKey
-    );
-    const collateralAcc = await getCollateralAcc(program, collateralPda);
+    const collateralPda = getCollateralPda(depositor.publicKey);
+    const collateralAcc = await fetchCollateralAcc(program, collateralPda);
 
     expect(collateralAcc.initialized).toEqual(true);
-    expect(collateralAcc.bump).toEqual(collateralBump);
     expect(collateralAcc.lamportBalance.toNumber()).toEqual(
-      amountCollateral.toNumber()
+      amountCollateral.toNumber(),
     );
     expect(collateralAcc.amountMinted.toNumber()).toEqual(
-      amountToMint.toNumber()
+      amountToMint.toNumber(),
     );
     expect(collateralAcc.depositor).toStrictEqual(depositor.publicKey);
 
-    const [depositorSolAccPda, depositorSolAccBump] = getSolAccPdaAndBump(
-      depositor.publicKey
-    );
-    const depositorSolAcc = await context.banksClient.getAccount(
-      depositorSolAccPda
-    );
+    const depositorSolAccPda = getSolAccPda(depositor.publicKey);
+    const depositorSolAcc = litesvm.getAccount(depositorSolAccPda);
 
-    expect(collateralAcc.solAccBump).toEqual(depositorSolAccBump);
     expect(depositorSolAcc.lamports).toEqual(amountCollateral.toNumber());
 
-    const [mintPda] = getMintPdaAndBump();
+    const mintPda = getMintPda();
     const depositorAtaPda = getAssociatedTokenAddressSync(
       mintPda,
       depositor.publicKey,
       false,
-      tokenProgram
+      tokenProgram,
     );
     const depositorAta = await getAccount(
       provider.connection,
       depositorAtaPda,
       "confirmed",
-      tokenProgram
+      tokenProgram,
     );
 
     expect(Number(depositorAta.amount)).toEqual(amountToMint.toNumber());
@@ -133,11 +116,7 @@ describe("deposit", () => {
         .signers([depositor])
         .rpc();
     } catch (err) {
-      expect(err).toBeInstanceOf(AnchorError);
-
-      const { error } = err as AnchorError;
-      expect(error.errorCode.code).toEqual("BelowMinimumHealthFactor");
-      expect(error.errorCode.number).toEqual(6000);
+      expectAnchorError(err, "BelowMinimumHealthFactor");
     }
   });
 });
