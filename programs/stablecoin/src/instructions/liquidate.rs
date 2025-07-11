@@ -52,7 +52,7 @@ pub struct Liquidate<'info> {
 }
 
 impl Liquidate<'_> {
-    pub fn liquidate(ctx: Context<Liquidate>, amount_to_burn: u64) -> Result<()> {
+    pub fn handler(ctx: Context<Liquidate>, amount_to_burn: u64) -> Result<()> {
         let mut health_factor = calculate_health_factor(
             ctx.accounts.collateral.lamport_balance,
             ctx.accounts.collateral.amount_minted,

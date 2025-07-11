@@ -59,7 +59,7 @@ pub struct Deposit<'info> {
 }
 
 impl Deposit<'_> {
-    pub fn deposit(
+    pub fn handler(
         ctx: Context<Deposit>,
         amount_collateral: u64,
         amount_to_mint: u64,

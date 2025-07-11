@@ -18,11 +18,11 @@ pub mod stablecoin {
     use super::*;
 
     pub fn init_config(ctx: Context<InitConfig>, args: InitConfigArgs) -> Result<()> {
-        InitConfig::init_config(ctx, args)
+        InitConfig::handler(ctx, args)
     }
 
     pub fn update_config(ctx: Context<UpdateConfig>, args: UpdateConfigArgs) -> Result<()> {
-        UpdateConfig::update_config(ctx, args)
+        UpdateConfig::handler(ctx, args)
     }
 
     pub fn deposit(
@@ -30,7 +30,7 @@ pub mod stablecoin {
         amount_collateral: u64,
         amount_to_mint: u64,
     ) -> Result<()> {
-        Deposit::deposit(ctx, amount_collateral, amount_to_mint)
+        Deposit::handler(ctx, amount_collateral, amount_to_mint)
     }
 
     pub fn withdraw(
@@ -38,10 +38,10 @@ pub mod stablecoin {
         amount_collateral: u64,
         amount_to_burn: u64,
     ) -> Result<()> {
-        Withdraw::withdraw(ctx, amount_collateral, amount_to_burn)
+        Withdraw::handler(ctx, amount_collateral, amount_to_burn)
     }
 
     pub fn liquidate(ctx: Context<Liquidate>, amount_to_burn: u64) -> Result<()> {
-        Liquidate::liquidate(ctx, amount_to_burn)
+        Liquidate::handler(ctx, amount_to_burn)
     }
 }

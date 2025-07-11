@@ -66,6 +66,12 @@ anchor keys sync
 anchor build
 ```
 
+> [!NOTE]  
+> Use the test build of the program when running tests.
+> ```
+> bun run build:test
+> ```
+
 #### Testing
 
 Run all `.test.ts` files under `/tests`.
@@ -73,8 +79,6 @@ Run all `.test.ts` files under `/tests`.
 ```bash
 bun test
 ```
-
-Note: certain test parameters may have to be adjusted as the SOL-USD price fluctuates.
 
 #### Deployment
 

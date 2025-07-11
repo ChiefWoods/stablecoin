@@ -38,7 +38,7 @@ pub struct InitConfig<'info> {
 }
 
 impl InitConfig<'_> {
-    pub fn init_config(ctx: Context<InitConfig>, args: InitConfigArgs) -> Result<()> {
+    pub fn handler(ctx: Context<InitConfig>, args: InitConfigArgs) -> Result<()> {
         ctx.accounts.config.set_inner(Config {
             bump: ctx.bumps.config,
             mint_bump: ctx.bumps.mint,

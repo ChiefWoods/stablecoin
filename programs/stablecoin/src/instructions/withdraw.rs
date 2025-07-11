@@ -58,7 +58,7 @@ pub struct Withdraw<'info> {
 }
 
 impl Withdraw<'_> {
-    pub fn withdraw(
+    pub fn handler(
         ctx: Context<Withdraw>,
         amount_collateral: u64,
         amount_to_burn: u64,

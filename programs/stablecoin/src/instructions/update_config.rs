@@ -22,7 +22,7 @@ pub struct UpdateConfig<'info> {
 }
 
 impl UpdateConfig<'_> {
-    pub fn update_config(ctx: Context<UpdateConfig>, args: UpdateConfigArgs) -> Result<()> {
+    pub fn handler(ctx: Context<UpdateConfig>, args: UpdateConfigArgs) -> Result<()> {
         if let Some(liquidation_threshold) = args.liquidation_threshold {
             ctx.accounts.config.liquidation_threshold = liquidation_threshold;
         }
