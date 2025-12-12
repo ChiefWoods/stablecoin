@@ -1,64 +1,113 @@
-import { AnchorError, Program } from "@coral-xyz/anchor";
-import { Stablecoin } from "../target/types/stablecoin";
-import idl from "../target/idl/stablecoin.json";
 import {
+  AddressLookupTableAccount,
   clusterApiUrl,
   Connection,
+  Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
+  Signer,
   SystemProgram,
+  TransactionInstruction,
+  TransactionMessage,
+  VersionedTransaction,
 } from "@solana/web3.js";
-import { SOL_USD_PRICE_FEED_PDA } from "./constants";
-import { AccountInfoBytes } from "litesvm";
-import { fromWorkspace, LiteSVMProvider } from "anchor-litesvm";
+import { SURFPOOL_RPC_URL } from "./constants";
+import { Surfpool } from "./surfpool";
+import { AnchorProvider, Idl, Program, Wallet } from "@coral-xyz/anchor";
 import { expect } from "bun:test";
+import { StablecoinClient } from "./StablecoinClient";
+import { ON_DEMAND_MAINNET_QUEUE, Queue } from "@switchboard-xyz/on-demand";
+import idl from "./../target/idl/stablecoin.json";
+import { Stablecoin } from "../target/types/stablecoin";
+import { CrossbarClient } from "@switchboard-xyz/common";
 
-const devnetConnection = new Connection(clusterApiUrl("devnet"));
+export const connection = new Connection(SURFPOOL_RPC_URL, "processed");
+const defaultWallet = new Wallet(Keypair.generate());
+const provider = new AnchorProvider(connection, defaultWallet, {
+  commitment: "processed",
+});
+const client = new StablecoinClient(provider);
+
+// used only for Switchboard On-Demand Queue
+const program = new Program<Stablecoin>(idl, provider);
+
+const crossbarClient = new CrossbarClient("https://crossbar.switchboard.xyz/");
+// @ts-ignore
+const queue = new Queue(program as Program<Idl>, ON_DEMAND_MAINNET_QUEUE);
+
+await airdropAccount(defaultWallet.publicKey);
+
+export async function airdropAccount(
+  publicKey: PublicKey,
+  lamports: number = LAMPORTS_PER_SOL,
+) {
+  await Surfpool.setAccount({
+    publicKey: publicKey.toBase58(),
+    lamports,
+  });
+}
 
 export async function getSetup(
-  accounts: { pubkey: PublicKey; account: AccountInfoBytes }[] = [],
+  accounts: {
+    publicKey: PublicKey;
+    lamports?: number;
+  }[],
 ) {
-  const litesvm = fromWorkspace("./");
-
-  const solUsdPriceFeedInfo = await devnetConnection.getAccountInfo(
-    SOL_USD_PRICE_FEED_PDA,
-  );
-
-  litesvm.setAccount(SOL_USD_PRICE_FEED_PDA, {
-    data: solUsdPriceFeedInfo.data,
-    executable: solUsdPriceFeedInfo.executable,
-    lamports: solUsdPriceFeedInfo.lamports,
-    owner: solUsdPriceFeedInfo.owner,
-  });
-
-  for (const { pubkey, account } of accounts) {
-    litesvm.setAccount(new PublicKey(pubkey), {
-      data: account.data,
-      executable: account.executable,
-      lamports: account.lamports,
-      owner: new PublicKey(account.owner),
-    });
+  // airdrops to accounts
+  for (const { publicKey, lamports } of accounts) {
+    await airdropAccount(publicKey, lamports);
   }
 
-  const provider = new LiteSVMProvider(litesvm);
-  const program = new Program<Stablecoin>(idl, provider);
-
-  return { litesvm, provider, program };
+  return { client, crossbarClient, queue };
 }
 
-export function fundedSystemAccountInfo(
-  lamports: number = LAMPORTS_PER_SOL,
-): AccountInfoBytes {
-  return {
-    lamports,
-    data: Buffer.alloc(0),
-    owner: SystemProgram.programId,
-    executable: false,
-  };
+export async function expectError(error: Error, code: string) {
+  expect(error.message).toInclude(code);
 }
 
-export async function expectAnchorError(error: Error, code: string) {
-  expect(error).toBeInstanceOf(AnchorError);
-  const { errorCode } = (error as AnchorError).error;
-  expect(errorCode.code).toBe(code);
+export async function expireBlockhash() {
+  const currentSlot = await connection.getSlot("processed");
+  while (true) {
+    const newSlot = await connection.getSlot("processed");
+    if (newSlot > currentSlot) break;
+  }
+}
+
+/**
+ * Resets singleton accounts that persist between tests in the Surfpool environment to a default state.
+ * @param pubkeys
+ */
+export async function resetAccounts(pubkeys: PublicKey[]) {
+  pubkeys
+    .filter((pk) => pk !== undefined && !pk.equals(PublicKey.default))
+    .forEach(async (pubkey) => {
+      await Surfpool.setAccount({
+        publicKey: pubkey.toBase58(),
+        lamports: 0,
+        // data: Buffer.alloc(0).toBase64(),
+        data: Buffer.alloc(0).toString("base64"),
+        executable: false,
+        owner: SystemProgram.programId.toBase58(),
+      });
+    });
+}
+
+export async function buildAndSendv0Tx(
+  ixs: TransactionInstruction[],
+  signers: Signer[],
+  luts: AddressLookupTableAccount[] = [],
+) {
+  const messageV0 = new TransactionMessage({
+    payerKey: signers[0].publicKey,
+    recentBlockhash: (await connection.getLatestBlockhash()).blockhash,
+    instructions: ixs,
+  }).compileToV0Message(luts);
+
+  const tx = new VersionedTransaction(messageV0);
+  tx.sign(signers);
+
+  const signature = await connection.sendTransaction(tx);
+  await connection.confirmTransaction(signature);
+
+  return signature;
 }
