@@ -11,19 +11,6 @@ SOL-backed stablecoin for [Solana Development Bootcamp](https://github.com/solan
 - [![Rust](https://img.shields.io/badge/Rust-f75008?style=for-the-badge&logo=rust)](https://www.rust-lang.org/)
 - [![TypeScript](https://img.shields.io/badge/TypeScript-ffffff?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 
-### Libraries
-
-- [@solana/web3.js](https://solana-foundation.github.io/solana-web3.js/)
-- [@solana/spl-token](https://solana-labs.github.io/solana-program-library/token/js/)
-- [litesvm](https://github.com/LiteSVM/litesvm/tree/master/crates/node-litesvm)
-- [anchor-litesvm](https://github.com/LiteSVM/anchor-litesvm/)
-
-### Crates
-
-- [anchor-lang](https://docs.rs/anchor-lang/latest/anchor_lang/)
-- [anchor-spl](https://docs.rs/anchor-spl/latest/anchor_spl/)
-- [pyth-solana-receiver-sdk](https://docs.rs/pyth-solana-receiver-sdk/latest/pyth_solana_receiver_sdk/)
-
 ### Test Runner
 
 - [![Bun](https://img.shields.io/badge/Bun-000?style=for-the-badge&logo=bun)](https://bun.sh/)
@@ -35,8 +22,8 @@ SOL-backed stablecoin for [Solana Development Bootcamp](https://github.com/solan
 1. Update your Solana CLI, avm and Bun toolkit to the latest version
 
 ```bash
-agave-install init 2.1.20
-avm use 0.31.1
+agave-install init 2.3.11
+avm use 0.32.1
 bun upgrade
 ```
 
@@ -77,7 +64,7 @@ anchor build
 Run all `.test.ts` files under `/tests`.
 
 ```bash
-bun test
+bun run test
 ```
 
 #### Deployment
