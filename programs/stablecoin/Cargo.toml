@@ -20,4 +20,4 @@ no-staleness-check = []
 [dependencies]
 anchor-lang = { version = "0.32.1", features = ["init-if-needed"] }
 anchor-spl = "0.32.1"
-pyth-solana-receiver-sdk = "1.1.0"
+switchboard-on-demand = { version = "0.11.3", features = ["anchor"] }

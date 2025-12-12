@@ -1,12 +1,12 @@
 use anchor_lang::prelude::*;
 
-use crate::{Config, CONFIG_SEED};
+use crate::{validate_bps, validate_ltv, Config, CONFIG_SEED};
 
 #[derive(AnchorSerialize, AnchorDeserialize)]
 pub struct UpdateConfigArgs {
-    pub liquidation_threshold: Option<u16>,
-    pub liquidation_bonus: Option<u16>,
-    pub min_health_factor: Option<f64>,
+    pub liquidation_threshold_bps: Option<u16>,
+    pub liquidation_bonus_bps: Option<u16>,
+    pub min_loan_to_value_bps: Option<u16>,
 }
 
 #[derive(Accounts)]
@@ -23,17 +23,32 @@ pub struct UpdateConfig<'info> {
 
 impl UpdateConfig<'_> {
     pub fn handler(ctx: Context<UpdateConfig>, args: UpdateConfigArgs) -> Result<()> {
-        if let Some(liquidation_threshold) = args.liquidation_threshold {
-            ctx.accounts.config.liquidation_threshold = liquidation_threshold;
+        let UpdateConfigArgs {
+            liquidation_bonus_bps,
+            liquidation_threshold_bps,
+            min_loan_to_value_bps,
+        } = args;
+
+        let config = &mut ctx.accounts.config;
+
+        if let Some(liquidation_threshold) = liquidation_threshold_bps {
+            config.liquidation_threshold_bps = liquidation_threshold;
         }
 
-        if let Some(liquidation_bonus) = args.liquidation_bonus {
-            ctx.accounts.config.liquidation_bonus = liquidation_bonus;
+        if let Some(liquidation_bonus) = liquidation_bonus_bps {
+            validate_bps(liquidation_bonus)?;
+
+            config.liquidation_bonus_bps = liquidation_bonus;
         }
 
-        if let Some(min_health_factor) = args.min_health_factor {
-            ctx.accounts.config.min_health_factor = min_health_factor;
+        if let Some(min_health_factor) = min_loan_to_value_bps {
+            config.min_loan_to_value_bps = min_health_factor;
         }
+
+        validate_ltv(
+            config.min_loan_to_value_bps,
+            config.liquidation_threshold_bps,
+        )?;
 
         Ok(())
     }

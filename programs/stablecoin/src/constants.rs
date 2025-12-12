@@ -2,14 +2,22 @@ use anchor_lang::prelude::*;
 
 #[constant]
 pub const CONFIG_SEED: &[u8] = b"config";
-pub const COLLATERAL_SEED: &[u8] = b"collateral";
-pub const SOL_SEED: &[u8] = b"sol";
+#[constant]
+pub const POSITION_SEED: &[u8] = b"position";
+#[constant]
+pub const VAULT_SEED: &[u8] = b"vault";
+#[constant]
 pub const MINT_SEED: &[u8] = b"mint";
-pub const SOL_USD_FEED_ID: &str =
-    "0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d";
-pub const MAX_BASIS_POINTS: u64 = 10000;
+#[constant]
+pub const MAX_BASIS_POINTS: u16 = 10000;
+#[constant]
 #[cfg(feature = "no-staleness-check")]
-pub const MAXIMUM_AGE: u64 = 999999;
+pub const ORACLE_MAX_AGE: u32 = u32::MAX;
+#[constant]
 #[cfg(not(feature = "no-staleness-check"))]
-pub const MAXIMUM_AGE: u64 = 120;
-pub const PRICE_FEED_DECIMAL_ADJUSTMENT: u128 = 10; // price feed returns 1e8, multiple by 10 to match lamports 10e9
+pub const ORACLE_MAX_AGE: u32 = 15;
+#[constant]
+pub const SOL_USD_FEED_ID: &str =
+    "822512ee9add93518eca1c105a38422841a76c590db079eebb283deb2c14caa9";
+#[constant]
+pub const MINT_DECIMALS: u8 = 6;

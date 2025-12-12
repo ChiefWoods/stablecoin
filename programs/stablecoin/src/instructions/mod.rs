@@ -1,11 +1,14 @@
-pub mod deposit;
-pub mod init_config;
-pub mod liquidate;
-pub mod update_config;
-pub mod withdraw;
+pub mod deposit_collateral;
+pub use deposit_collateral::*;
 
-pub use deposit::*;
-pub use init_config::*;
-pub use liquidate::*;
+pub mod initialize_config;
+pub use initialize_config::*;
+
+pub mod liquidate_position;
+pub use liquidate_position::*;
+
+pub mod update_config;
 pub use update_config::*;
-pub use withdraw::*;
+
+pub mod withdraw_collateral;
+pub use withdraw_collateral::*;
