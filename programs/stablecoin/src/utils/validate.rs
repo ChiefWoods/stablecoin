@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use switchboard_on_demand::prelude::rust_decimal::Decimal;
 
-use crate::{error::StablecoinError, health_factor, MAX_BASIS_POINTS};
+use crate::{error::StablecoinError, MAX_BASIS_POINTS};
 
 pub fn validate_bps(bps: u16) -> Result<()> {
     require_gte!(MAX_BASIS_POINTS, bps, StablecoinError::InvalidBasisPoints);

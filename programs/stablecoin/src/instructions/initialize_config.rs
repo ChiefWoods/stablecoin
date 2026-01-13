@@ -1,10 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenInterface};
 
-use crate::{
-    error::StablecoinError, validate, validate_bps, validate_ltv, Config, CONFIG_SEED,
-    MINT_DECIMALS, MINT_SEED,
-};
+use crate::{validate_bps, validate_ltv, Config, CONFIG_SEED, MINT_DECIMALS, MINT_SEED};
 
 #[derive(AnchorSerialize, AnchorDeserialize)]
 pub struct InitializeConfigArgs {
