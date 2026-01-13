@@ -11,11 +11,7 @@ pub const MINT_SEED: &[u8] = b"mint";
 #[constant]
 pub const MAX_BASIS_POINTS: u16 = 10000;
 #[constant]
-#[cfg(feature = "no-staleness-check")]
-pub const ORACLE_MAX_AGE: u32 = u32::MAX;
-#[constant]
-#[cfg(not(feature = "no-staleness-check"))]
-pub const ORACLE_MAX_AGE: u32 = 15;
+pub const ORACLE_MAX_AGE: u16 = 100;
 #[constant]
 pub const SOL_USD_FEED_ID: &str =
     "822512ee9add93518eca1c105a38422841a76c590db079eebb283deb2c14caa9";

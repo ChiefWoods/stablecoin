@@ -1,21 +1,18 @@
 use anchor_lang::{
-    prelude::{pubkey::PUBKEY_BYTES, *},
+    prelude::*,
     system_program::{create_account, transfer, CreateAccount, Transfer},
 };
 use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{mint_to, Mint, MintTo, TokenAccount, TokenInterface},
 };
-use switchboard_on_demand::{
-    default_queue, get_switchboard_on_demand_program_id, OnDemandError, QuoteVerifier,
-    SwitchboardQuote,
-};
+use switchboard_on_demand::default_queue;
 
 use crate::{
-    bps_to_decimal, calculate_health_factor, error::StablecoinError, get_price_from_quote,
-    mint_signer, position_signer, validate_above_min_health_factor, validate_price, Config,
-    Position, SafeMath, SafeMathAssign, CONFIG_SEED, ID, MINT_SEED, ORACLE_MAX_AGE, POSITION_SEED,
-    VAULT_SEED,
+    bps_to_decimal, calculate_health_factor, error::StablecoinError, get_oracle_quote,
+    get_price_from_quote, mint_signer, position_signer, validate_above_min_health_factor,
+    validate_price, Config, Position, SafeMath, SafeMathAssign, CONFIG_SEED, ID, MINT_SEED,
+    POSITION_SEED, VAULT_SEED,
 };
 
 #[derive(Accounts)]
@@ -147,25 +144,15 @@ impl<'info> DepositCollateral<'info> {
 
         let clock = Clock::get()?;
 
-        let oracle_quote_ai = &oracle_quote.to_account_info();
-        let oracle_quote_data = oracle_quote_ai.data.borrow();
+        let oracle_quote_data = oracle_quote.data.borrow();
 
-        let discriminator = &oracle_quote_data[0..SwitchboardQuote::DISCRIMINATOR.len()];
-
-        if discriminator != SwitchboardQuote::DISCRIMINATOR
-            || *oracle_quote.owner != get_switchboard_on_demand_program_id()
-        {
-            return err!(OnDemandError::InvalidQuoteError);
-        };
-
-        let quote = QuoteVerifier::new()
-            .queue(oracle_queue.to_account_info())
-            .slothash_sysvar(slot_hashes_sysvar.to_account_info())
-            .ix_sysvar(instructions_sysvar.to_account_info())
-            .clock_slot(clock.slot)
-            .max_age(ORACLE_MAX_AGE as u64)
-            .verify(&oracle_quote_data[SwitchboardQuote::DISCRIMINATOR.len() + PUBKEY_BYTES..])
-            .unwrap();
+        let quote = get_oracle_quote(
+            oracle_queue.to_account_info(),
+            slot_hashes_sysvar.to_account_info(),
+            instructions_sysvar.to_account_info(),
+            clock.slot,
+            &oracle_quote_data,
+        )?;
 
         let price = get_price_from_quote(quote)?;
         validate_price(price)?;
