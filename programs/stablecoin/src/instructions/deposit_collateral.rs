@@ -1,6 +1,6 @@
 use anchor_lang::{
     prelude::*,
-    system_program::{create_account, transfer, CreateAccount, Transfer},
+    system_program::{transfer, Transfer},
 };
 use anchor_spl::{
     associated_token::AssociatedToken,
@@ -10,9 +10,8 @@ use switchboard_on_demand::default_queue;
 
 use crate::{
     bps_to_decimal, calculate_health_factor, error::StablecoinError, get_oracle_quote,
-    get_price_from_quote, mint_signer, position_signer, validate_above_min_health_factor,
-    validate_price, Config, Position, SafeMath, SafeMathAssign, CONFIG_SEED, ID, MINT_SEED,
-    POSITION_SEED, VAULT_SEED,
+    get_price_from_quote, mint_signer, validate_above_min_health_factor, validate_price, Config,
+    Position, SafeMath, SafeMathAssign, CONFIG_SEED, MINT_SEED, POSITION_SEED, VAULT_SEED,
 };
 
 #[derive(Accounts)]
@@ -24,8 +23,14 @@ pub struct DepositCollateral<'info> {
         bump = config.bump,
     )]
     pub config: Account<'info, Config>,
-    /// CHECK: deserialized in handler to initialize if needed
-    pub position: UncheckedAccount<'info>,
+    #[account(
+        init_if_needed,
+        payer = depositor,
+        space = Position::DISCRIMINATOR.len() + Position::INIT_SPACE,
+        seeds = [POSITION_SEED, depositor.key().as_ref()],
+        bump,
+    )]
+    pub position: Account<'info, Position>,
     /// CHECK: SwitchbordOnDemand QueueAccountData
     #[account(
         address = default_queue(),
@@ -83,7 +88,6 @@ impl<'info> DepositCollateral<'info> {
             position,
             token_program,
             vault,
-            system_program,
             config,
             oracle_queue,
             oracle_quote,
@@ -92,54 +96,14 @@ impl<'info> DepositCollateral<'info> {
             ..
         } = ctx.accounts;
 
-        let mut position = Position::try_deserialize(
-            &mut &position.to_account_info().data.borrow()[..],
-        )
-        .or_else(|_| {
-            let depositor_key = depositor.key();
-            let position_seeds: &[&[u8]] = &[POSITION_SEED, depositor_key.as_ref()];
-            let (position_pda, position_bump) = Pubkey::find_program_address(position_seeds, &ID);
-
-            require_keys_eq!(
-                position_pda,
-                position.key(),
-                StablecoinError::InvalidPositionAddress
-            );
-
-            let position_signer: &[&[u8]] = position_signer!(depositor_key, position_bump);
-            let space = Position::DISCRIMINATOR.len() + Position::INIT_SPACE;
-            let min_rent = Rent::get()?.minimum_balance(space);
-
-            create_account(
-                CpiContext::new(
-                    system_program.to_account_info(),
-                    CreateAccount {
-                        from: depositor.to_account_info(),
-                        to: position.to_account_info(),
-                    },
-                )
-                .with_signer(&[position_signer]),
-                min_rent,
-                space as u64,
-                &ID,
-            )?;
-
-            let new_position = Position {
-                bump: position_bump,
-                vault_bump: ctx.bumps.vault,
-                amount_minted: 0,
+        if position.bump == 0 {
+            **position = Position {
                 depositor: depositor.key(),
-            };
-
-            new_position.serialize(&mut &mut position.to_account_info().data.borrow_mut()[..])?;
-            Ok(new_position)
-        })?;
-
-        require_keys_eq!(
-            *ctx.accounts.position.owner,
-            ID,
-            StablecoinError::InvalidProgramAccount
-        );
+                amount_minted: 0,
+                bump: ctx.bumps.position,
+                vault_bump: ctx.bumps.vault,
+            }
+        }
 
         let lamport_balance = vault.lamports().safe_add(collateral_amount)?;
         position.amount_minted.safe_add_assign(amount_to_mint)?;

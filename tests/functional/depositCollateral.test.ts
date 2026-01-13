@@ -99,7 +99,6 @@ describe("depositCollateral", () => {
       .preInstructions(updateIxs)
       .accounts({
         depositor: depositor.publicKey,
-        position: positionPda,
         oracleQuote,
         tokenProgram: TOKEN_PROGRAM_ID,
       })
