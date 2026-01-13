@@ -61,7 +61,9 @@ pub struct WithdrawCollateral<'info> {
     pub system_program: Program<'info, System>,
     pub token_program: Interface<'info, TokenInterface>,
     pub associated_token_program: Program<'info, AssociatedToken>,
-    pub slot_hashes_sysvar: Sysvar<'info, SlotHashes>,
+    /// CHECK: Slot hashes sysvar
+    #[account(address = sysvar::slot_hashes::ID)]
+    pub slot_hashes_sysvar: UncheckedAccount<'info>,
     /// CHECK: Instructions sysvar
     #[account(address = sysvar::instructions::ID)]
     pub instructions_sysvar: UncheckedAccount<'info>,

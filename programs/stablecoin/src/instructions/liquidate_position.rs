@@ -58,7 +58,9 @@ pub struct LiquidatePosition<'info> {
     pub liquidator_token_account: InterfaceAccount<'info, TokenAccount>,
     pub system_program: Program<'info, System>,
     pub token_program: Interface<'info, TokenInterface>,
-    pub slot_hashes_sysvar: Sysvar<'info, SlotHashes>,
+    /// CHECK: Slot hashes sysvar
+    #[account(address = sysvar::slot_hashes::ID)]
+    pub slot_hashes_sysvar: UncheckedAccount<'info>,
     /// CHECK: Instructions sysvar
     #[account(address = sysvar::instructions::ID)]
     pub instructions_sysvar: UncheckedAccount<'info>,
