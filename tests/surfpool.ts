@@ -64,7 +64,7 @@ export class Surfpool {
     config: TimeTravelConfig;
     value: number;
   }) {
-    await fetch(SURFPOOL_RPC_URL, {
+    const response = await fetch(SURFPOOL_RPC_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -80,6 +80,29 @@ export class Surfpool {
         ],
       }),
     });
+
+    const data = (await response.json()) as any;
+
+    return data.result;
+  }
+
+  static async getSurfnetInfo() {
+    const response = await fetch(SURFPOOL_RPC_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: crypto.randomUUID(),
+        method: "surfnet_getSurfnetInfo",
+        params: [],
+      }),
+    });
+
+    const data = (await response.json()) as any;
+
+    return data.result;
   }
 
   static async initMint({
