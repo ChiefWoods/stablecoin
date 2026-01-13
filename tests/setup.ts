@@ -1,6 +1,6 @@
 import {
   AddressLookupTableAccount,
-  clusterApiUrl,
+  Commitment,
   Connection,
   Keypair,
   LAMPORTS_PER_SOL,
@@ -21,10 +21,11 @@ import idl from "./../target/idl/stablecoin.json";
 import { Stablecoin } from "../target/types/stablecoin";
 import { CrossbarClient } from "@switchboard-xyz/common";
 
-export const connection = new Connection(SURFPOOL_RPC_URL, "processed");
+const commitment: Commitment = "processed";
+export const connection = new Connection(SURFPOOL_RPC_URL, commitment);
 const defaultWallet = new Wallet(Keypair.generate());
 const provider = new AnchorProvider(connection, defaultWallet, {
-  commitment: "processed",
+  commitment,
 });
 const client = new StablecoinClient(provider);
 
@@ -66,9 +67,9 @@ export async function expectError(error: Error, code: string) {
 }
 
 export async function expireBlockhash() {
-  const currentSlot = await connection.getSlot("processed");
+  const currentSlot = await connection.getSlot(commitment);
   while (true) {
-    const newSlot = await connection.getSlot("processed");
+    const newSlot = await connection.getSlot(commitment);
     if (newSlot > currentSlot) break;
   }
 }
