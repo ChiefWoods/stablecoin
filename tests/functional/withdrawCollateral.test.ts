@@ -95,10 +95,10 @@ describe("withdrawCollateral", () => {
     // deposit SOL as collateral
     await program.methods
       .depositCollateral(new BN(lamports), new BN(amountToMint))
+      // TODO: Quote is too old error from verified_update instruction
       .preInstructions(updateIxs)
       .accounts({
         depositor: depositor.publicKey,
-        position: positionPda,
         oracleQuote,
         tokenProgram: TOKEN_PROGRAM_ID,
       })
@@ -135,9 +135,9 @@ describe("withdrawCollateral", () => {
     const lamports = 2.5 * LAMPORTS_PER_SOL; // 2.5 SOL
     const amountToBurn = 125 * Math.pow(10, MINT_DECIMALS); // $125
 
-    // TODO: Quote is too old error from verified_update instruction
     await program.methods
       .withdrawCollateral(new BN(lamports), new BN(amountToBurn))
+      // TODO: Quote is too old error from verified_update instruction
       .preInstructions(updateIxs)
       .accountsPartial({
         depositor: depositor.publicKey,

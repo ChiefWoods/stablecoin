@@ -93,9 +93,9 @@ describe("depositCollateral", () => {
     const lamports = 5 * LAMPORTS_PER_SOL; // 5 SOL
     const amountToMint = 250 * Math.pow(10, MINT_DECIMALS); // $250
 
-    // TODO: Quote is too old error from verified_update instruction
     await program.methods
       .depositCollateral(new BN(lamports), new BN(amountToMint))
+      // TODO: Quote is too old error from verified_update instruction
       .preInstructions(updateIxs)
       .accounts({
         depositor: depositor.publicKey,

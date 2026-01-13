@@ -101,10 +101,10 @@ describe("liquidatePosition", () => {
     // deposit SOL as collateral
     await program.methods
       .depositCollateral(new BN(lamports), new BN(amountToMint))
+      // TODO: Quote is too old error from verified_update instruction
       .preInstructions(updateIxs)
       .accounts({
         depositor: depositor.publicKey,
-        position: positionPda,
         oracleQuote,
         tokenProgram: TOKEN_PROGRAM_ID,
       })
@@ -165,9 +165,9 @@ describe("liquidatePosition", () => {
       },
     );
 
-    // TODO: Quote is too old error from verified_update instruction
     await program.methods
       .liquidatePosition(new BN(amountToBurn))
+      // TODO: Quote is too old error from verified_update instruction
       .preInstructions(updateIxs)
       .accounts({
         liquidator: liquidator.publicKey,
