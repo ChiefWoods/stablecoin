@@ -5,7 +5,6 @@ pub mod safe_math;
 pub use safe_math::*;
 
 pub mod signer_seeds;
-pub use signer_seeds::*;
 
 pub mod switchboard;
 pub use switchboard::*;

@@ -4,6 +4,9 @@ version = "0.1.0"
 description = "Created with Anchor"
 edition = "2021"
 
+[lints.rust]
+unexpected_cfgs = { level = "allow", check-cfg = ['cfg(no_staleness_check)'] }
+
 [lib]
 crate-type = ["cdylib", "lib"]
 name = "stablecoin"
