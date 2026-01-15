@@ -7,8 +7,11 @@ use anchor_spl::{
     token_2022::{burn_checked, BurnChecked},
     token_interface::{Mint, TokenAccount, TokenInterface},
 };
-use switchboard_on_demand::prelude::rust_decimal::{prelude::ToPrimitive, Decimal};
 use switchboard_on_demand::{default_queue, get_slot};
+use switchboard_on_demand::{
+    prelude::rust_decimal::{prelude::ToPrimitive, Decimal},
+    SwitchboardQuote, SwitchboardQuoteExt,
+};
 
 use crate::{
     bps_to_decimal, calculate_health_factor, error::StablecoinError, get_oracle_quote,
@@ -36,8 +39,10 @@ pub struct LiquidatePosition<'info> {
         address = default_queue(),
     )]
     pub oracle_queue: UncheckedAccount<'info>,
-    /// CHECK: SwitchboardOnDemand SwitchboardQuote
-    pub oracle_quote: UncheckedAccount<'info>,
+    #[account(
+        address = oracle_quote.canonical_key(&default_queue())
+    )]
+    pub oracle_quote: Box<Account<'info, SwitchboardQuote>>,
     #[account(
         mut,
         seeds = [VAULT_SEED, position.key().as_ref()],
@@ -87,14 +92,14 @@ impl<'info> LiquidatePosition<'info> {
             ..
         } = ctx.accounts;
 
-        let oracle_quote_data = oracle_quote.data.borrow();
+        let oracle_quote_data = oracle_quote.to_account_data().unwrap();
 
         let quote = get_oracle_quote(
             oracle_queue.to_account_info(),
             slot_hashes_sysvar.to_account_info(),
             instructions_sysvar.to_account_info(),
             get_slot(&clock.to_account_info()),
-            &oracle_quote_data,
+            &oracle_quote_data.as_slice(),
         )?;
 
         let price = get_price_from_quote(quote)?;
