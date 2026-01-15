@@ -18,6 +18,7 @@ import {
 } from "../constants";
 import {
   getAssociatedTokenAddressSync,
+  OracleQuote,
   Queue,
 } from "@switchboard-xyz/on-demand";
 import { CrossbarClient } from "@switchboard-xyz/common";
@@ -81,23 +82,16 @@ describe("depositCollateral", () => {
   test("deposit SOL as collateral", async () => {
     positionPda = StablecoinClient.getPositionPda(depositor.publicKey);
 
-    const updateIxs = await queue.fetchManagedUpdateIxs(
-      crossbarClient,
-      [SOL_USD_FEED_ID],
-      {
-        instructionIdx: 0,
-        payer: depositor.publicKey,
-        variableOverrides: {},
-      },
-    );
+    const ed25519Ix = await queue.fetchQuoteIx(crossbarClient, [
+      SOL_USD_FEED_ID,
+    ]);
 
     const lamports = 5 * LAMPORTS_PER_SOL; // 5 SOL
     const amountToMint = 250 * Math.pow(10, MINT_DECIMALS); // $250
 
     await program.methods
       .depositCollateral(new BN(lamports), new BN(amountToMint))
-      // TODO: Quote is too old error from verified_update instruction
-      .preInstructions(updateIxs)
+      .preInstructions([ed25519Ix])
       .accounts({
         depositor: depositor.publicKey,
         oracleQuote,

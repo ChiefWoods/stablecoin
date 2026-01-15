@@ -89,21 +89,14 @@ describe("liquidatePosition", () => {
 
     positionPda = StablecoinClient.getPositionPda(depositor.publicKey);
 
-    const updateIxs = await queue.fetchManagedUpdateIxs(
-      crossbarClient,
-      [SOL_USD_FEED_ID],
-      {
-        instructionIdx: 0,
-        payer: depositor.publicKey,
-        variableOverrides: {},
-      },
-    );
+    const ed25519Ix = await queue.fetchQuoteIx(crossbarClient, [
+      SOL_USD_FEED_ID,
+    ]);
 
     // deposit SOL as collateral
     await program.methods
       .depositCollateral(new BN(lamports), new BN(amountToMint))
-      // TODO: Quote is too old error from verified_update instruction
-      .preInstructions(updateIxs)
+      .preInstructions([ed25519Ix])
       .accounts({
         depositor: depositor.publicKey,
         oracleQuote,
@@ -157,20 +150,13 @@ describe("liquidatePosition", () => {
     );
     const preVaultBal = await connection.getBalance(vaultPda);
 
-    const updateIxs = await queue.fetchManagedUpdateIxs(
-      crossbarClient,
-      [SOL_USD_FEED_ID],
-      {
-        instructionIdx: 0,
-        payer: depositor.publicKey,
-        variableOverrides: {},
-      },
-    );
+    const ed25519Ix = await queue.fetchQuoteIx(crossbarClient, [
+      SOL_USD_FEED_ID,
+    ]);
 
     await program.methods
       .liquidatePosition(new BN(amountToBurn))
-      // TODO: Quote is too old error from verified_update instruction
-      .preInstructions(updateIxs)
+      .preInstructions([ed25519Ix])
       .accounts({
         liquidator: liquidator.publicKey,
         oracleQuote,

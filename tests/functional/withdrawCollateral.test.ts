@@ -83,21 +83,14 @@ describe("withdrawCollateral", () => {
 
     positionPda = StablecoinClient.getPositionPda(depositor.publicKey);
 
-    const updateIxs = await queue.fetchManagedUpdateIxs(
-      crossbarClient,
-      [SOL_USD_FEED_ID],
-      {
-        instructionIdx: 0,
-        payer: depositor.publicKey,
-        variableOverrides: {},
-      },
-    );
+    const ed25519Ix = await queue.fetchQuoteIx(crossbarClient, [
+      SOL_USD_FEED_ID,
+    ]);
 
     // deposit SOL as collateral
     await program.methods
       .depositCollateral(new BN(lamports), new BN(amountToMint))
-      // TODO: Quote is too old error from verified_update instruction
-      .preInstructions(updateIxs)
+      .preInstructions([ed25519Ix])
       .accounts({
         depositor: depositor.publicKey,
         oracleQuote,
@@ -124,23 +117,16 @@ describe("withdrawCollateral", () => {
     const preDepositorAtaAcc = await getAccount(connection, depositorAta);
     const preVaultBal = await connection.getBalance(vaultPda);
 
-    const updateIxs = await queue.fetchManagedUpdateIxs(
-      crossbarClient,
-      [SOL_USD_FEED_ID],
-      {
-        instructionIdx: 0,
-        payer: depositor.publicKey,
-        variableOverrides: {},
-      },
-    );
+    const ed25519Ix = await queue.fetchQuoteIx(crossbarClient, [
+      SOL_USD_FEED_ID,
+    ]);
 
     const lamports = 2.5 * LAMPORTS_PER_SOL; // 2.5 SOL
     const amountToBurn = 125 * Math.pow(10, MINT_DECIMALS); // $125
 
     await program.methods
       .withdrawCollateral(new BN(lamports), new BN(amountToBurn))
-      // TODO: Quote is too old error from verified_update instruction
-      .preInstructions(updateIxs)
+      .preInstructions([ed25519Ix])
       .accountsPartial({
         depositor: depositor.publicKey,
         oracleQuote,
