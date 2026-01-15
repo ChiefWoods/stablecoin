@@ -11,12 +11,12 @@ import {
   TransactionMessage,
   VersionedTransaction,
 } from "@solana/web3.js";
-import { SURFPOOL_RPC_URL } from "./constants";
+import { ON_DEMAND_QUEUE, SURFPOOL_RPC_URL } from "./constants";
 import { Surfpool } from "./surfpool";
 import { AnchorProvider, Idl, Program, Wallet } from "@coral-xyz/anchor";
 import { expect } from "bun:test";
 import { StablecoinClient } from "./StablecoinClient";
-import { ON_DEMAND_MAINNET_QUEUE, Queue } from "@switchboard-xyz/on-demand";
+import { Queue } from "@switchboard-xyz/on-demand";
 import idl from "./../target/idl/stablecoin.json";
 import { Stablecoin } from "../target/types/stablecoin";
 import { CrossbarClient } from "@switchboard-xyz/common";
@@ -34,7 +34,7 @@ const program = new Program<Stablecoin>(idl, provider);
 
 const crossbarClient = new CrossbarClient("https://crossbar.switchboard.xyz/");
 // @ts-ignore
-const queue = new Queue(program as Program<Idl>, ON_DEMAND_MAINNET_QUEUE);
+const queue = new Queue(program as Program<Idl>, ON_DEMAND_QUEUE);
 
 await airdropAccount(defaultWallet.publicKey);
 
