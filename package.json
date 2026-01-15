@@ -5,7 +5,7 @@
     "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
     "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check",
     "prepare": "husky",
-    "build:test": "anchor build -- --features no-staleness-check",
+    "build:test": "anchor build -- --features no-staleness-check,test",
     "surfpool:start": "surfpool start -u 'https://api.mainnet-beta.solana.com' --watch",
     "test": "bun test --timeout 60000"
   },

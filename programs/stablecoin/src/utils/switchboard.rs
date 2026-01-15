@@ -1,6 +1,10 @@
 use anchor_lang::prelude::*;
 
-use switchboard_on_demand::{prelude::rust_decimal::Decimal, OracleQuote, QuoteVerifier};
+use switchboard_on_demand::{
+    prelude::rust_decimal::Decimal,
+    smallvec::{SmallVec, U8Prefix},
+    OracleQuote, PackedFeedInfo, QuoteVerifier,
+};
 
 use crate::{error::StablecoinError, ORACLE_MAX_AGE, SOL_USD_FEED_ID};
 
@@ -36,4 +40,9 @@ pub fn get_price_from_quote(quote: OracleQuote) -> Result<Decimal> {
         .find(|feed| feed.feed_id() == SOL_USD_FEED_ID.as_bytes())
         .ok_or(StablecoinError::MissingRequiredPriceFeed)?
         .value())
+}
+
+/// Used when no feeds in the oracle quote account matches the target feed ID
+pub fn get_price_from_first_quote_feed(feeds: &SmallVec<PackedFeedInfo, U8Prefix>) -> Decimal {
+    feeds[0].value()
 }

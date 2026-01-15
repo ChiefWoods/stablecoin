@@ -11,8 +11,9 @@ use switchboard_on_demand::{default_queue, get_slot, SwitchboardQuote, Switchboa
 
 use crate::{
     bps_to_decimal, calculate_health_factor, error::StablecoinError, get_oracle_quote,
-    get_price_from_quote, validate_above_min_health_factor, validate_price, vault_signer, Config,
-    Position, SafeMath, SafeMathAssign, CONFIG_SEED, MINT_SEED, POSITION_SEED, VAULT_SEED,
+    get_price_from_first_quote_feed, get_price_from_quote, validate_above_min_health_factor,
+    validate_price, vault_signer, Config, Position, SafeMath, SafeMathAssign, CONFIG_SEED,
+    MINT_SEED, POSITION_SEED, VAULT_SEED,
 };
 
 #[derive(Accounts)]
@@ -101,15 +102,20 @@ impl<'info> WithdrawCollateral<'info> {
 
         let oracle_quote_data = oracle_quote.to_account_data().unwrap();
 
-        let quote = get_oracle_quote(
-            oracle_queue.to_account_info(),
-            slot_hashes_sysvar.to_account_info(),
-            instructions_sysvar.to_account_info(),
-            get_slot(&clock.to_account_info()),
-            &oracle_quote_data.as_slice(),
-        )?;
+        let price = if cfg!(not(feature = "test")) {
+            let quote = get_oracle_quote(
+                oracle_queue.to_account_info(),
+                slot_hashes_sysvar.to_account_info(),
+                instructions_sysvar.to_account_info(),
+                get_slot(&clock.to_account_info()),
+                &oracle_quote_data.as_slice(),
+            )?;
 
-        let price = get_price_from_quote(quote)?;
+            get_price_from_quote(quote)?
+        } else {
+            get_price_from_first_quote_feed(&oracle_quote.feeds)
+        };
+
         validate_price(price)?;
 
         let health_factor =

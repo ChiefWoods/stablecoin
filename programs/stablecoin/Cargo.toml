@@ -19,8 +19,9 @@ no-idl = []
 no-log-ix-name = []
 idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build", "switchboard-on-demand/idl-build"]
 no-staleness-check = []
+test = []
 
 [dependencies]
 anchor-lang = { version = "0.32.1", features = ["init-if-needed"] }
 anchor-spl = "0.32.1"
-switchboard-on-demand = { version = "0.11.3", features = ["anchor"] }
+switchboard-on-demand = { version = "0.11.3", features = ["anchor", "devnet"] }
