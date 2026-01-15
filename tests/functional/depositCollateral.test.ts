@@ -5,6 +5,7 @@ import {
   Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
+  SYSVAR_CLOCK_PUBKEY,
 } from "@solana/web3.js";
 import { getSetup, resetAccounts } from "../setup";
 import { BN, Program } from "@coral-xyz/anchor";
@@ -101,6 +102,7 @@ describe("depositCollateral", () => {
         depositor: depositor.publicKey,
         oracleQuote,
         tokenProgram: TOKEN_PROGRAM_ID,
+        clock: SYSVAR_CLOCK_PUBKEY,
       })
       .signers([depositor])
       .rpc();

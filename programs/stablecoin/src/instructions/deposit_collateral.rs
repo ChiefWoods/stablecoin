@@ -6,7 +6,7 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token_interface::{mint_to, Mint, MintTo, TokenAccount, TokenInterface},
 };
-use switchboard_on_demand::default_queue;
+use switchboard_on_demand::{default_queue, get_slot};
 
 use crate::{
     bps_to_decimal, calculate_health_factor, error::StablecoinError, get_oracle_quote,
@@ -61,6 +61,8 @@ pub struct DepositCollateral<'info> {
     pub system_program: Program<'info, System>,
     pub token_program: Interface<'info, TokenInterface>,
     pub associated_token_program: Program<'info, AssociatedToken>,
+    /// CHECK: Clock sysvar
+    pub clock: UncheckedAccount<'info>,
     /// CHECK: Slot hashes sysvar
     #[account(address = sysvar::slot_hashes::ID)]
     pub slot_hashes_sysvar: UncheckedAccount<'info>,
@@ -93,6 +95,7 @@ impl<'info> DepositCollateral<'info> {
             oracle_quote,
             instructions_sysvar,
             slot_hashes_sysvar,
+            clock,
             ..
         } = ctx.accounts;
 
@@ -108,15 +111,13 @@ impl<'info> DepositCollateral<'info> {
         let lamport_balance = vault.lamports().safe_add(collateral_amount)?;
         position.amount_minted.safe_add_assign(amount_to_mint)?;
 
-        let clock = Clock::get()?;
-
         let oracle_quote_data = oracle_quote.data.borrow();
 
         let quote = get_oracle_quote(
             oracle_queue.to_account_info(),
             slot_hashes_sysvar.to_account_info(),
             instructions_sysvar.to_account_info(),
-            clock.slot,
+            get_slot(&clock.to_account_info()),
             &oracle_quote_data,
         )?;
 

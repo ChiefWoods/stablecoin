@@ -7,7 +7,7 @@ use anchor_spl::{
     token_2022::{burn_checked, BurnChecked},
     token_interface::{Mint, TokenAccount, TokenInterface},
 };
-use switchboard_on_demand::default_queue;
+use switchboard_on_demand::{default_queue, get_slot};
 
 use crate::{
     bps_to_decimal, calculate_health_factor, error::StablecoinError, get_oracle_quote,
@@ -61,6 +61,8 @@ pub struct WithdrawCollateral<'info> {
     pub system_program: Program<'info, System>,
     pub token_program: Interface<'info, TokenInterface>,
     pub associated_token_program: Program<'info, AssociatedToken>,
+    /// CHECK: Clock sysvar
+    pub clock: UncheckedAccount<'info>,
     /// CHECK: Slot hashes sysvar
     #[account(address = sysvar::slot_hashes::ID)]
     pub slot_hashes_sysvar: UncheckedAccount<'info>,
@@ -88,13 +90,12 @@ impl<'info> WithdrawCollateral<'info> {
             mint,
             token_program,
             system_program,
+            clock,
             ..
         } = ctx.accounts;
 
         let lamport_balance = vault.lamports().safe_sub(collateral_amount)?;
         position.amount_minted.safe_sub_assign(amount_to_burn)?;
-
-        let clock = Clock::get()?;
 
         let oracle_quote_data = oracle_quote.data.borrow();
 
@@ -102,7 +103,7 @@ impl<'info> WithdrawCollateral<'info> {
             oracle_queue.to_account_info(),
             slot_hashes_sysvar.to_account_info(),
             instructions_sysvar.to_account_info(),
-            clock.slot,
+            get_slot(&clock.to_account_info()),
             &oracle_quote_data,
         )?;
 

@@ -7,8 +7,8 @@ use anchor_spl::{
     token_2022::{burn_checked, BurnChecked},
     token_interface::{Mint, TokenAccount, TokenInterface},
 };
-use switchboard_on_demand::default_queue;
 use switchboard_on_demand::prelude::rust_decimal::{prelude::ToPrimitive, Decimal};
+use switchboard_on_demand::{default_queue, get_slot};
 
 use crate::{
     bps_to_decimal, calculate_health_factor, error::StablecoinError, get_oracle_quote,
@@ -58,6 +58,8 @@ pub struct LiquidatePosition<'info> {
     pub liquidator_token_account: InterfaceAccount<'info, TokenAccount>,
     pub system_program: Program<'info, System>,
     pub token_program: Interface<'info, TokenInterface>,
+    /// CHECK: Clock sysvar
+    pub clock: UncheckedAccount<'info>,
     /// CHECK: Slot hashes sysvar
     #[account(address = sysvar::slot_hashes::ID)]
     pub slot_hashes_sysvar: UncheckedAccount<'info>,
@@ -81,10 +83,9 @@ impl<'info> LiquidatePosition<'info> {
             system_program,
             mint,
             token_program,
+            clock,
             ..
         } = ctx.accounts;
-
-        let clock = Clock::get()?;
 
         let oracle_quote_data = oracle_quote.data.borrow();
 
@@ -92,7 +93,7 @@ impl<'info> LiquidatePosition<'info> {
             oracle_queue.to_account_info(),
             slot_hashes_sysvar.to_account_info(),
             instructions_sysvar.to_account_info(),
-            clock.slot,
+            get_slot(&clock.to_account_info()),
             &oracle_quote_data,
         )?;
 
