@@ -21,9 +21,9 @@ pub fn get_oracle_quote<'b, 'info: 'b>(
         .max_age(ORACLE_MAX_AGE as u64);
 
     let quote = if cfg!(feature = "no-staleness-check") {
-        verifier.parse_unverified(quote_data).unwrap()
+        verifier.parse_unverified_delimited(quote_data).unwrap()
     } else {
-        verifier.verify_instruction_at(0).unwrap()
+        verifier.verify_delimited(quote_data).unwrap()
     };
 
     Ok(quote)
