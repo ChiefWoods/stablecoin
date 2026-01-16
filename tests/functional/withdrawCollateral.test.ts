@@ -101,8 +101,8 @@ describe("withdrawCollateral", () => {
       .rpc();
 
     depositorAta = getAssociatedTokenAddressSync(
-      depositor.publicKey,
       mintPda,
+      depositor.publicKey,
       !PublicKey.isOnCurve(depositor.publicKey),
     );
 
@@ -143,7 +143,7 @@ describe("withdrawCollateral", () => {
 
     expect(
       prePositionAcc.amountMinted.eq(
-        postPositionAcc.amountMinted.addn(amountToBurn),
+        postPositionAcc.amountMinted.add(new BN(amountToBurn)),
       ),
     ).toBeTrue();
 
@@ -155,7 +155,7 @@ describe("withdrawCollateral", () => {
 
     const postVaultBal = await connection.getBalance(vaultPda);
 
-    expect(preVaultBal).toBe(postVaultBal - lamports);
+    expect(preVaultBal).toBe(postVaultBal + lamports);
   });
 
   afterEach(async () => {

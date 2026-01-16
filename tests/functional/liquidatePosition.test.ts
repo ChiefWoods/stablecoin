@@ -107,8 +107,8 @@ describe("liquidatePosition", () => {
       .rpc();
 
     depositorAta = getAssociatedTokenAddressSync(
-      depositor.publicKey,
       mintPda,
+      depositor.publicKey,
       !PublicKey.isOnCurve(depositor.publicKey),
     );
 
@@ -157,11 +157,13 @@ describe("liquidatePosition", () => {
     await program.methods
       .liquidatePosition(new BN(amountToBurn))
       .preInstructions([ed25519Ix])
-      .accounts({
+      .accountsPartial({
         liquidator: liquidator.publicKey,
         oracleQuote,
         tokenProgram: TOKEN_PROGRAM_ID,
         clock: SYSVAR_CLOCK_PUBKEY,
+        position: positionPda,
+        vault: vaultPda,
       })
       .signers([liquidator])
       .rpc();
@@ -177,7 +179,7 @@ describe("liquidatePosition", () => {
 
     expect(
       prePositionAcc.amountMinted.eq(
-        postPositionAcc.amountMinted.addn(amountToBurn),
+        postPositionAcc.amountMinted.add(new BN(amountToBurn)),
       ),
     ).toBeTrue();
 
