@@ -117,8 +117,8 @@ describe("liquidatePosition", () => {
 
   test("liquidate half of undercollaterized position", async () => {
     // update config to meet liquidation requirements
-    const liquidationThresholdBps = 25000; // 250%
-    const minLoanToValueBps = 22500; // 225%
+    const liquidationThresholdBps = 30000; // 300%
+    const minLoanToValueBps = 35000; // 350%
 
     await program.methods
       .updateConfig({
