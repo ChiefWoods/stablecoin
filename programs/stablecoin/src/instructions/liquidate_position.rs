@@ -14,16 +14,19 @@ use switchboard_on_demand::{
 };
 
 use crate::{
-    bps_to_decimal, calculate_health_factor, error::StablecoinError, get_oracle_quote,
+    bps_to_decimal, calculate_health_factor, close, error::StablecoinError, get_oracle_quote,
     get_price_from_first_quote_feed, get_price_from_quote, validate_above_min_health_factor,
     validate_price, vault_signer, Config, Position, SafeMath, SafeMathAssign, CONFIG_SEED,
-    MINT_SEED, POSITION_SEED, VAULT_SEED,
+    MINT_DECIMALS, MINT_SEED, POSITION_SEED, VAULT_SEED,
 };
 
 #[derive(Accounts)]
 pub struct LiquidatePosition<'info> {
     #[account(mut)]
     pub liquidator: Signer<'info>,
+    /// CHECK: depositor of position account to be liquidated
+    #[account(mut)]
+    pub depositor: UncheckedAccount<'info>,
     #[account(
         seeds = [CONFIG_SEED],
         bump = config.bump,
@@ -31,7 +34,7 @@ pub struct LiquidatePosition<'info> {
     pub config: Account<'info, Config>,
     #[account(
         mut,
-        seeds = [POSITION_SEED, position.depositor.key().as_ref()],
+        seeds = [POSITION_SEED, depositor.key().as_ref()],
         bump = position.bump,
     )]
     pub position: Account<'info, Position>,
@@ -90,6 +93,7 @@ impl<'info> LiquidatePosition<'info> {
             mint,
             token_program,
             clock,
+            depositor,
             ..
         } = ctx.accounts;
 
@@ -131,6 +135,10 @@ impl<'info> LiquidatePosition<'info> {
 
         // vault balance is the max amount that can be liquidated
         let lamport_balance = vault.lamports().saturating_sub(amount_to_liquidate);
+        position
+            .amount_minted
+            .safe_sub_assign(amount_to_burn)
+            .map_err(|_| StablecoinError::InsufficientAmountMinted)?;
 
         health_factor = calculate_health_factor(lamport_balance, position.amount_minted, price)?;
 
@@ -167,6 +175,11 @@ impl<'info> LiquidatePosition<'info> {
             amount_to_burn,
             mint.decimals,
         )?;
+
+        // Close position if fully liquidated
+        if position.amount_minted == 0 {
+            close(position.to_account_info(), depositor.to_account_info())?;
+        }
 
         Ok(())
     }

@@ -26,4 +26,6 @@ pub enum StablecoinError {
     InvalidCollateralAmount,
     #[msg("Liquidation threshold must be greater than minimum LTV")]
     InvalidLtvConfiguration,
+    #[msg("Position does not have enough mint amount to burn")]
+    InsufficientAmountMinted,
 }

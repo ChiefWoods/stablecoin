@@ -159,6 +159,7 @@ describe("liquidatePosition", () => {
       .preInstructions([ed25519Ix])
       .accountsPartial({
         liquidator: liquidator.publicKey,
+        depositor: depositor.publicKey,
         oracleQuote,
         tokenProgram: TOKEN_PROGRAM_ID,
         clock: SYSVAR_CLOCK_PUBKEY,
