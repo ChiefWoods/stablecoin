@@ -1,0 +1,26 @@
+################################################################
+# Manage stablecoin deployment through Crypto Infrastructure as Code
+################################################################
+
+addon "svm" {
+    rpc_api_url = input.rpc_api_url
+    network_id = input.network_id
+}
+
+action "deploy_stablecoin" "svm::deploy_program" {
+    description = "Deploy stablecoin program"
+    program = svm::get_program_from_anchor_project("stablecoin") 
+    authority = signer.authority
+    payer = signer.payer
+    // Optional: if you want to deploy the program via a cheatcode when targeting a Surfnet, set `instant_surfnet_deployment = true`
+    // Deploying via a cheatcode will write the program data directly to the program account, rather than sending transactions.
+    // This will make deployments instantaneous, but is deviating from how the deployments will take place on devnet/mainnet.
+    instant_surfnet_deployment = true
+}
+
+action "stream_switchboard_oracle_quotes" "svm::setup_surfnet" {
+    stream_account {
+        public_key = "orac1eFjzWL5R3RbbdMV68K9H6TaCVVcL6LjvQQWAbz"
+        include_owned_accounts = true
+    }
+}

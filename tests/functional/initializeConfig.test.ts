@@ -6,7 +6,7 @@ import { Program } from "@coral-xyz/anchor";
 import { Stablecoin } from "../../target/types/stablecoin";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
-describe("updateConfig", () => {
+describe("initializeConfig", () => {
   let client: StablecoinClient;
   let program: Program<Stablecoin>;
   let connection: Connection;
@@ -30,8 +30,9 @@ describe("updateConfig", () => {
 
     configPda = StablecoinClient.getConfigPda();
     mintPda = StablecoinClient.getMintPda();
+  });
 
-    // initialize config
+  test("initialize config", async () => {
     const liquidationBonusBps = 250; // 2.5%
     const liquidationThresholdBps = 12500; // 125%
     const minLoanToValueBps = 15000; // 150%
@@ -45,24 +46,6 @@ describe("updateConfig", () => {
       .accounts({
         authority: configAuthority.publicKey,
         tokenProgram: TOKEN_PROGRAM_ID,
-      })
-      .signers([configAuthority])
-      .rpc();
-  });
-
-  test("update config", async () => {
-    const liquidationBonusBps = 500; // 5%
-    const liquidationThresholdBps = 15000; // 150%
-    const minLoanToValueBps = 17500; // 175%
-
-    await program.methods
-      .updateConfig({
-        liquidationBonusBps,
-        liquidationThresholdBps,
-        minLoanToValueBps,
-      })
-      .accounts({
-        authority: configAuthority.publicKey,
       })
       .signers([configAuthority])
       .rpc();

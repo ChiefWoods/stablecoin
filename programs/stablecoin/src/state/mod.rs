@@ -1,5 +1,5 @@
-pub mod collateral;
 pub mod config;
-
-pub use collateral::*;
 pub use config::*;
+
+pub mod position;
+pub use position::*;
