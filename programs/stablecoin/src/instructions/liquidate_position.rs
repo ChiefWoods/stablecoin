@@ -129,8 +129,8 @@ impl<'info> LiquidatePosition<'info> {
             .to_u64()
             .ok_or(StablecoinError::ConversionFailed)?;
 
-        let lamport_balance = vault.lamports().safe_sub(amount_to_liquidate)?;
-        position.amount_minted.safe_sub_assign(amount_to_burn)?;
+        // vault balance is the max amount that can be liquidated
+        let lamport_balance = vault.lamports().saturating_sub(amount_to_liquidate);
 
         health_factor = calculate_health_factor(lamport_balance, position.amount_minted, price)?;
 
