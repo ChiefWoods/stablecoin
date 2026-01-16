@@ -120,7 +120,7 @@ impl<'info> LiquidatePosition<'info> {
             StablecoinError::AboveLiquidationThreshold
         );
 
-        let lamports = Decimal::from(amount_to_burn)
+        let lamports = Decimal::new(amount_to_burn as i64, MINT_DECIMALS as u32)
             .safe_mul(LAMPORTS_PER_SOL.into())?
             .safe_div(price)?;
         let liquidation_bonus = lamports.safe_mul(bps_to_decimal(config.liquidation_bonus_bps)?)?;
