@@ -139,9 +139,9 @@ impl<'info> LiquidatePosition<'info> {
             bps_to_decimal(config.min_loan_to_value_bps)?,
         )?;
 
-        let depositor_key = position.depositor.key();
+        let position_key = position.key();
         let vault_bump = position.vault_bump;
-        let vault_signer: &[&[u8]] = vault_signer!(depositor_key, vault_bump);
+        let vault_signer: &[&[u8]] = vault_signer!(position_key, vault_bump);
 
         transfer(
             CpiContext::new_with_signer(
