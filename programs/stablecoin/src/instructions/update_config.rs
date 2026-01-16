@@ -31,18 +31,18 @@ impl UpdateConfig<'_> {
 
         let config = &mut ctx.accounts.config;
 
-        if let Some(liquidation_threshold) = liquidation_threshold_bps {
-            config.liquidation_threshold_bps = liquidation_threshold;
+        if let Some(liquidation_threshold_bps) = liquidation_threshold_bps {
+            config.liquidation_threshold_bps = liquidation_threshold_bps;
         }
 
-        if let Some(liquidation_bonus) = liquidation_bonus_bps {
-            validate_bps(liquidation_bonus)?;
+        if let Some(liquidation_bonus_bps) = liquidation_bonus_bps {
+            validate_bps(liquidation_bonus_bps)?;
 
-            config.liquidation_bonus_bps = liquidation_bonus;
+            config.liquidation_bonus_bps = liquidation_bonus_bps;
         }
 
-        if let Some(min_health_factor) = min_loan_to_value_bps {
-            config.min_loan_to_value_bps = min_health_factor;
+        if let Some(min_loan_to_value_bps) = min_loan_to_value_bps {
+            config.min_loan_to_value_bps = min_loan_to_value_bps;
         }
 
         validate_ltv(
