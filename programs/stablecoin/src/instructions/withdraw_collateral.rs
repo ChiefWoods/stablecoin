@@ -29,7 +29,6 @@ pub struct WithdrawCollateral<'info> {
         mut,
         seeds = [POSITION_SEED, depositor.key().as_ref()],
         bump = position.bump,
-        has_one = depositor,
     )]
     pub position: Account<'info, Position>,
     /// CHECK: SwitchbordOnDemand QueueAccountData
