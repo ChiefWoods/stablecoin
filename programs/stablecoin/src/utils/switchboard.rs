@@ -38,7 +38,7 @@ pub fn get_price_from_quote(quote: OracleQuote) -> Result<Decimal> {
     Ok(quote
         .feeds()
         .iter()
-        .find(|feed| feed.hex_id() == SOL_USD_FEED_ID)
+        .find(|feed| feed.feed_id() == &SOL_USD_FEED_ID)
         .ok_or(StablecoinError::MissingRequiredPriceFeed)?
         .value())
 }
