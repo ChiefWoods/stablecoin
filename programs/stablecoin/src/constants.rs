@@ -14,6 +14,6 @@ pub const MAX_BASIS_POINTS: u16 = 10000;
 pub const ORACLE_MAX_AGE: u16 = 100;
 #[constant]
 pub const SOL_USD_FEED_ID: &str =
-    "822512ee9add93518eca1c105a38422841a76c590db079eebb283deb2c14caa9";
+    "0x822512ee9add93518eca1c105a38422841a76c590db079eebb283deb2c14caa9";
 #[constant]
 pub const MINT_DECIMALS: u8 = 6;

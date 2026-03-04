@@ -1,9 +1,7 @@
-use anchor_lang::prelude::*;
+use anchor_lang::prelude::{pubkey::PUBKEY_BYTES, *};
 
 use switchboard_on_demand::{
-    prelude::rust_decimal::Decimal,
-    smallvec::{SmallVec, U8Prefix},
-    OracleQuote, PackedFeedInfo, QuoteVerifier,
+    prelude::rust_decimal::Decimal, OracleQuote, QuoteVerifier, SwitchboardQuote,
 };
 
 use crate::{error::StablecoinError, ORACLE_MAX_AGE, SOL_USD_FEED_ID};
@@ -24,10 +22,13 @@ pub fn get_oracle_quote<'b, 'info: 'b>(
         .clock_slot(slot)
         .max_age(ORACLE_MAX_AGE as u64);
 
+    // discriminator + queue pubkey
+    let delimited = &quote_data[SwitchboardQuote::DISCRIMINATOR.len() + PUBKEY_BYTES..];
+
     let quote = if cfg!(feature = "no-staleness-check") {
-        verifier.parse_unverified_delimited(quote_data).unwrap()
+        verifier.parse_unverified_delimited(delimited).unwrap()
     } else {
-        verifier.verify_delimited(quote_data).unwrap()
+        verifier.verify_delimited(delimited).unwrap()
     };
 
     Ok(quote)
@@ -37,12 +38,7 @@ pub fn get_price_from_quote(quote: OracleQuote) -> Result<Decimal> {
     Ok(quote
         .feeds()
         .iter()
-        .find(|feed| feed.feed_id() == SOL_USD_FEED_ID.as_bytes())
+        .find(|feed| feed.hex_id() == SOL_USD_FEED_ID)
         .ok_or(StablecoinError::MissingRequiredPriceFeed)?
         .value())
-}
-
-/// Used when no feeds in the oracle quote account matches the target feed ID
-pub fn get_price_from_first_quote_feed(feeds: &SmallVec<PackedFeedInfo, U8Prefix>) -> Decimal {
-    feeds[0].value()
 }
